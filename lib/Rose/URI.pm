@@ -21,7 +21,7 @@ our $Make_URI;
 
 our $SCHEME_RE = '[a-zA-Z][a-zA-Z0-9.+\-]*';
 
-our $VERSION = '0.011';
+our $VERSION = '0.012';
 
 #our $Debug = 0;
 
@@ -337,13 +337,13 @@ sub rel
 
   return $self  unless($base);
 
-  if($self =~ m{^$base/?})
+  my $uri = $self->as_string;
+
+  if($uri =~ m{^$base/?})
   {
-    my $new = $self->as_string;
+    $uri =~ s{^$base/?}{};
 
-    $new =~ s{^$base/?}{};
-
-    return Rose::URI->new($new);
+    return Rose::URI->new($uri);
   }
 
   return $self;
@@ -541,7 +541,7 @@ these formats, use C<URI> instead.
 Constructs a URI object based on URI or PARAMS, where URI is a string
 and PARAMS are described below. Returns a new C<Rose::URI> object.
 
-The query string portion of thee URI argument may use either "&" or ";"
+The query string portion of the URI argument may use either "&" or ";"
 as the parameter separator. Examples:
 
     $uri = Rose::URI->new('/foo?a=1&b=2');
@@ -610,7 +610,7 @@ character exists anywhere in teh query string, it is assumed to be the
 separator.
 
 If none of the characters "&", ";", or "=" appears in the query string, then
-thee entire query string is taken as a single parameter name with an undefined
+the entire query string is taken as a single parameter name with an undefined
 value.
 
 Hashes and lists should specify multiple parameter values using array
