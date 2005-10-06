@@ -19,7 +19,7 @@ our $Make_URI;
 
 our $SCHEME_RE = '[a-zA-Z][a-zA-Z0-9.+\-]*';
 
-our $VERSION = '0.02';
+our $VERSION = '0.021';
 
 # Class data
 use Rose::Class::MakeMethods::Generic
@@ -94,8 +94,7 @@ sub init_with_uri
 sub clone
 {
   my($self) = shift;
-
-  return ref($self)->new($self);
+  return bless _deep_copy($self), ref($self);
 }
 
 sub parse_query
@@ -493,6 +492,10 @@ sub _deep_copy
     $copy = \(my $var = '');
     $$copy = _deep_copy($$data);
   }
+  elsif($ref_type->isa(__PACKAGE__)) # cloning
+  {
+    $copy = _deep_copy({ %{$data} });
+  }
   else
   {
     $copy = $data;
@@ -537,7 +540,7 @@ L<Rose::URI> is an alternative to L<URI>.  The important differences are as foll
 
 L<Rose::URI> provides a rich set of query string manipulation methods. Query parameters can be added, removed, and checked for their existence. L<URI> allows the entire query to be set or returned as a whole via the L<query_form|URI/query_form> or L<query|URI/query> methods, and the L<URI::QueryParam> module provides a few more methods for query string manipulation.
 
-L<Rose::URI> supports query parameters with multiple values (e.g. "a=1&a=2"). L<URI> has  limited support for this (through C<query_form|URI/query_form>'s list return value.  Better methods are available in L<URI::QueryParam>.
+L<Rose::URI> supports query parameters with multiple values (e.g. "a=1&a=2"). L<URI> has  limited support for this (through L<query_form|URI/query_form>'s list return value.  Better methods are available in L<URI::QueryParam>.
 
 L<Rose::URI> uses Apache's C-based URI parsing and HTML escaping functions when running in a mod_perl 1.x web server environment.
 
