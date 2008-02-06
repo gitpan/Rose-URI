@@ -19,7 +19,7 @@ our $Make_URI;
 
 our $SCHEME_RE = '[a-zA-Z][a-zA-Z0-9.+\-]*';
 
-our $VERSION = '0.021';
+our $VERSION = '0.022';
 
 # Class data
 use Rose::Class::MakeMethods::Generic
@@ -101,6 +101,8 @@ sub parse_query
 {
   my($self, $query) = @_;
 
+  $self->{'query_string'} = undef;
+
   unless(defined $query && $query =~ /\S/)
   {
     $self->{'query'} = { };
@@ -119,8 +121,8 @@ sub parse_query
   }
   elsif(index($query, '=') < 0)
   {
-    # XXX: Should be "keywords"?
-    $self->{'query'} = { $query => undef };
+    $self->{'query_string'} = __unescape_uri($query);
+    $self->{'query'} = { $self->{'query_string'} => undef };
     return 1;
   }
 
@@ -174,6 +176,8 @@ sub query_param
   }
   elsif(@_ == 2)
   {
+    $self->{'query_string'} = undef;
+
     if(ref $_[1])
     {
       return $self->{'query'}{$_[0]} = [ @{$_[1]} ];
@@ -231,6 +235,11 @@ sub query_param_delete
 
   foreach my $param (@_)
   {
+    if(defined $self->{'query_string'} && $param eq $self->{'query_string'})
+    {
+      $self->{'query_string'} = undef;
+    }
+
     delete $self->{'query'}{$param};
   }
 }
@@ -274,7 +283,14 @@ sub query
     $self->{'query'} = _deep_copy({ @_ });
   }
 
-  return  unless(defined(wantarray));
+  my $want = wantarray;
+
+  return  unless(defined wantarray);
+
+  if(defined $self->{'query_string'})
+  {
+    return __escape_uri($self->{'query_string'});
+  }
 
   my @query;
 
@@ -295,6 +311,7 @@ sub query_form
 
   if(@_)
   {
+    $self->{'query_string'} = undef;
     $self->{'query'} = { };
 
     for(my $i = 0; $i < $#_; $i += 2)
@@ -510,7 +527,7 @@ __END__
 
 =head1 NAME
 
-Rose::URI - A standalone URI class allowing easy and efficient manipulation of query parameters and other URI components.
+Rose::URI - A URI class that allows easy and efficient manipulation of URI components.
 
 =head1 SYNOPSIS
 
@@ -540,7 +557,7 @@ L<Rose::URI> is an alternative to L<URI>.  The important differences are as foll
 
 L<Rose::URI> provides a rich set of query string manipulation methods. Query parameters can be added, removed, and checked for their existence. L<URI> allows the entire query to be set or returned as a whole via the L<query_form|URI/query_form> or L<query|URI/query> methods, and the L<URI::QueryParam> module provides a few more methods for query string manipulation.
 
-L<Rose::URI> supports query parameters with multiple values (e.g. "a=1&a=2"). L<URI> has  limited support for this (through L<query_form|URI/query_form>'s list return value.  Better methods are available in L<URI::QueryParam>.
+L<Rose::URI> supports query parameters with multiple values (e.g. "a=1&a=2"). L<URI> has  limited support for this through L<query_form|URI/query_form>'s list return value.  Better methods are available in L<URI::QueryParam>.
 
 L<Rose::URI> uses Apache's C-based URI parsing and HTML escaping functions when running in a mod_perl 1.x web server environment.
 
@@ -637,7 +654,7 @@ Get or set the port number portion of the URI.
 
 =item B<query [QUERY]>
 
-Get or sets the URI's query.  QUERY may be a query string (e.g. "a=1&b=2"), a reference to a hash, or a list of name/value pairs.
+Get or sets the URI's query.  QUERY may be an appropriately escaped query string (e.g. "a=1&b=2&c=a+long+string"), a reference to a hash, or a list of name/value pairs.
 
 Query strings may use either "&" or ";" as their query separator. If a "&" character exists anywhere in the query string, it is assumed to be the separator.
 
@@ -748,8 +765,8 @@ Get or set the username portion of the URI.
 
 =head1 AUTHOR
 
-John C. Siracusa (siracusa@mindspring.com)
+John C. Siracusa (siracusa@gmail.com)
 
 =head1 COPYRIGHT
 
-Copyright (c) 2005 by John C. Siracusa.  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+Copyright (c) 2006 by John C. Siracusa.  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
